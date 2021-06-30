@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sdc
+  namespace: eventproc
+spec:
+  selector:
+    matchLabels:
+      app: sdc
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: sdc
+    spec:
+      containers:
+      - name: datacollector
+        image: dhpnpepeplacr.azurecr.io/streamsets/datacollector:4.1.0-SNAPSHOT
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: ".2"
+            memory: "1Gi"
+          limits:
+            cpu: ".3"
+            memory: "2Gi"
+        ports:
+        - containerPort: 18630
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sdc-eventproc
+  namespace: eventproc
+spec:
+  selector:
+    app: sdc
+  ports:
+  - name: http
+    targetPort: 18630
+    port: 18630
+  type: ClusterIP

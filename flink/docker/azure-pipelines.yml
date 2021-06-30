@@ -1,0 +1,57 @@
+trigger: none
+
+variables:
+  - group: dha-dpp-artifact
+  - name: BUILD_NUMBER
+    value: $(Build.BuildId)
+  # - name: DOCKER_BUILDKIT
+  #   value: 1
+
+stages:
+- stage: build_and_publish
+  displayName: "Build Apache Flink docker image"
+  jobs:
+  - job: publish
+    # displayName: ""
+    pool:
+      name: 'Linux-NextGen_DockerOnly'
+    variables:
+      - name: image-name
+        value: flink
+    steps:
+      - task: Docker@2
+        displayName: Login to Jfrog Remote Registry
+        inputs:
+          command: login
+          containerRegistry: jfrog-docker-remote-registry
+      - task: Docker@2
+        displayName: Login to Jfrog Virtual Artifactory
+        inputs:
+          command: login
+          containerRegistry: humana-dha-docker-virtual-registry
+      - task: Docker@2
+        displayName: Login to Jfrog Artifactory
+        inputs:
+          command: login
+          containerRegistry: dha-agent-docker-registry
+      # - bash: |
+      #     docker pull "humana-docker-remote.jfrog.io/docker/dockerfile-copy:v0.1.9"
+      #     docker tag "humana-docker-remote.jfrog.io/docker/dockerfile-copy:v0.1.9" "docker.io/docker/dockerfile-copy:v0.1.9"
+      #   displayName: Adding docker-copy helper
+      - task: Docker@2
+        displayName: Build Docker Image
+        inputs:
+          command: build
+          Dockerfile: flink/docker/Dockerfile
+          repository: $(image-name)
+          containerRegistry: dha-agent-docker-registry
+          tags: |
+            1.12.4.$(BUILD_NUMBER)
+      - task: Docker@2
+        displayName: Push
+        inputs:
+          command: push
+          repository: $(image-name)
+          containerRegistry: dha-agent-docker-registry
+          tags: |
+            1.12.4.$(BUILD_NUMBER)
